@@ -61,7 +61,7 @@
 <div class="container">
     <div class="header">
         <h1>juDock</h1>
-        <span>Virtual Screening & ML Docking Predictor</span>
+        <span>AI-Powered Virtual Screening Platform</span>
     </div>
     <div class="tabs">
         <div class="tab active" onclick="switchTab('run')">Run Pipeline</div>
@@ -238,6 +238,40 @@
         } catch (e) { listDiv.innerHTML = '<div style="padding:15px;color:red">Error loading results.</div>'; }
     }
     
+    // async function loadDetail(folder, element) {
+    //     document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('selected'));
+    //     element.classList.add('selected');
+    //     const contentDiv = document.getElementById('resultContent');
+    //     contentDiv.innerHTML = "Loading data...";
+    //     try {
+    //         const response = await fetch(`/get-result-data/${folder}`);
+    //         const result = await response.json();
+    //         if (!result.success) { contentDiv.innerHTML = `<p style="color:red">${result.message}</p>`; return; }
+            
+    //         let tableHTML = `<h3>Run: ${folder}</h3><table><thead><tr>`;
+    //         const headers = Object.keys(result.data[0]);
+    //         for(const header of headers) { tableHTML += `<th>${header}</th>`; }
+    //         tableHTML += '</tr></thead><tbody>';
+
+    //         for(const row of result.data) {
+    //             tableHTML += '<tr>';
+    //             for(const header of headers) { 
+    //                 let cellVal = row[header];
+    //                 if (header === "Activity") {
+    //                     if (cellVal === "Potential") cellVal = `<b style="color:#2e7d32">${cellVal}</b>`;
+    //                     else if (cellVal === "Not Active") cellVal = `<b style="color:#c62828">${cellVal}</b>`;
+    //                 }
+    //                 tableHTML += `<td>${cellVal}</td>`; 
+    //             }
+    //             tableHTML += '</tr>';
+    //         }
+    //         tableHTML += '</tbody></table>';
+    //         contentDiv.innerHTML = tableHTML;
+    //     } catch(e) {
+    //         contentDiv.innerHTML = '<p style="color:red">Error parsing data.</p>';
+    //     }
+    // }
+
     async function loadDetail(folder, element) {
         document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('selected'));
         element.classList.add('selected');
@@ -248,20 +282,28 @@
             const result = await response.json();
             if (!result.success) { contentDiv.innerHTML = `<p style="color:red">${result.message}</p>`; return; }
             
+            // --- TWEAK 1: Define exact column order ---
+            const headers = ["Ligand_ID", "Predicted_Binding_Affinity", "Predicted_Num_H_Bonds", "dockscore", "Activity"];
+            
             let tableHTML = `<h3>Run: ${folder}</h3><table><thead><tr>`;
-            const headers = Object.keys(result.data[0]);
-            for(const header of headers) { tableHTML += `<th>${header}</th>`; }
+            // Clean up header names (replace underscores with spaces)
+            for(const header of headers) { tableHTML += `<th>${header.replace(/_/g, ' ')}</th>`; }
             tableHTML += '</tr></thead><tbody>';
 
             for(const row of result.data) {
                 tableHTML += '<tr>';
                 for(const header of headers) { 
                     let cellVal = row[header];
+                    
+                    // --- TWEAK 2: Add color for Putative ---
                     if (header === "Activity") {
                         if (cellVal === "Potential") cellVal = `<b style="color:#2e7d32">${cellVal}</b>`;
+                        else if (cellVal === "Putative") cellVal = `<b style="color:#e65100">${cellVal}</b>`; // Amber/Orange
                         else if (cellVal === "Not Active") cellVal = `<b style="color:#c62828">${cellVal}</b>`;
                     }
-                    tableHTML += `<td>${cellVal}</td>`; 
+                    
+                    // Ensure undefined values just show blank
+                    tableHTML += `<td>${cellVal !== undefined ? cellVal : ''}</td>`; 
                 }
                 tableHTML += '</tr>';
             }

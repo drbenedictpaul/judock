@@ -134,15 +134,28 @@ route("/get-result-data/:folder") do
     return json(Dict("success" => true, "data" => json_data))
 end
 
+# # --- Server Startup ---
+# println("\n======================================================")
+# println("          juDock - An ML-based Docking Predictor")
+# println("           Developed by: Dr. Benedict Christopher Paul")
+# println("                  www.drpaul.cc")
+# println("======================================================")
+# println("\nInitializing directories...")
+# mkpath(INPUT_DIR); mkpath(OUTPUT_DIR); mkpath(MODELS_DIR); mkpath(RESULTS_ARCHIVE)
+# mkpath(joinpath(ROOT_DIR, "public", "logs"))
+# println("Starting juDock web server on http://localhost:8000")
+# Genie.config.server_host = "0.0.0.0"
+# Genie.up(8000, async=false)
+
 # --- Server Startup ---
 println("\n======================================================")
-println("          juDock - An ML-based Docking Predictor")
-println("           Developed by: Dr. Benedict Christopher Paul")
-println("                  www.drpaul.cc")
+println("   juDock - AI-Powered Virtual Screening Platform     ")
+println("     Developed by: Dr. Benedict Christopher Paul      ")
+println("                Website: www.drpaul.cc                ")
 println("======================================================")
 println("\nInitializing directories...")
-mkpath(INPUT_DIR); mkpath(OUTPUT_DIR); mkpath(MODELS_DIR); mkpath(RESULTS_ARCHIVE)
-mkpath(joinpath(ROOT_DIR, "public", "logs"))
+mkpath(INPUT_DIR); mkpath(MODELS_DIR); mkpath(RESULTS_ARCHIVE)
+mkpath(joinpath(ROOT_DIR, "public")); mkpath(LOG_DIR)
 println("Starting juDock web server on http://localhost:8000")
 Genie.config.server_host = "0.0.0.0"
 Genie.up(8000, async=false)
