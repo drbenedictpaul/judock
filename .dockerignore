@@ -1,0 +1,10 @@
+.git
+.gitignore
+.dockerignore
+juDock-v1.0-linux
+*.tar.gz
+juDock_input
+juDock_output
+juDock_results
+public/logs
+*.log

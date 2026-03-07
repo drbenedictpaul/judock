@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>juDock | ML Docking Predictor</title>
+    <style>
+        :root {
+            --primary-color: #2e7d32; 
+            --secondary-color: #1b5e20;
+            --light-bg: #f4f7f5;
+            --text-color: #333;
+        }
+        body { font-family: system-ui, sans-serif; background-color: var(--light-bg); color: var(--text-color); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 1200px; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); overflow: hidden; margin-bottom: 20px; }
+        
+        .header { background-color: var(--primary-color); color: white; padding: 25px; text-align: center; }
+        .header h1 { margin: 0; font-size: 28px;}
+        .header span { opacity: 0.9; font-size: 14px; }
+        
+        .tabs { display: flex; background: var(--secondary-color); }
+        .tab { padding: 15px 30px; color: #c8e6c9; cursor: pointer; font-weight: bold; border-bottom: 3px solid transparent; transition: 0.2s;}
+        .tab:hover { color: white; }
+        .tab.active { background: white; color: var(--primary-color); border-bottom: 3px solid var(--primary-color); }
+        
+        .content { padding: 30px; display: none; }
+        .content.active { display: block; }
+        
+        button { background-color: var(--primary-color); color: white; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer; font-size: 15px; font-weight: 600;}
+        button:disabled { background-color: #a5d6a7; cursor: not-allowed; }
+        
+        /* THE CLEAN PROGRESS BOX */
+        #statusBox { 
+            display: none; 
+            border: 1px solid #c8e6c9; border-radius: 6px; padding: 20px; 
+            margin-top: 25px; background: #f1f8e9; 
+        }
+        .status-header { display: flex; justify-content: space-between; font-weight: bold; font-size: 16px; margin-bottom: 12px; color: var(--secondary-color);}
+        .progress-bar-container { background: #e0e0e0; border-radius: 6px; overflow: hidden; height: 18px; margin-bottom: 12px; }
+        .progress-bar-fill { background: var(--primary-color); height: 100%; width: 0%; transition: width 0.3s ease; }
+        .status-footer { display: flex; justify-content: space-between; font-size: 14px; color: #555;}
+        .log-link { color: #1565c0; font-weight: 600; text-decoration: none; }
+        .log-link:hover { text-decoration: underline; }
+
+        /* Results table */
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #ddd; }
+        th { background: #fafafa; }
+        .results-container { display: flex; height: 500px; border: 1px solid #ddd; border-radius: 5px; overflow:hidden;}
+        .sidebar { width: 280px; background: #fafafa; border-right: 1px solid #ddd; overflow-y: auto; }
+        .result-view { flex: 1; padding: 20px; overflow-y: auto; }
+        .sidebar-item { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; }
+        .sidebar-item:hover { background: #f0f0f0; }
+        .sidebar-item.selected { background: #e8f5e9; font-weight: bold; border-left: 4px solid var(--primary-color); }
+        
+        .app-footer { text-align: center; font-size: 13px; color: #777; line-height: 1.5; }
+        .app-footer a { color: var(--primary-color); text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>juDock</h1>
+        <span>AI-Powered Virtual Screening Platform</span>
+    </div>
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('run')">Run Pipeline</div>
+        <div class="tab" onclick="switchTab('results')">View Results</div>
+    </div>
+
+    <!-- RUN TAB -->
+    <div id="tab-run" class="content active">
+        <div style="background: #fff3e0; padding: 15px; border-left: 4px solid #ff9800; border-radius: 4px; margin-bottom: 20px; font-size: 14px;">
+            <b>Instructions:</b> Please place your ligand SDF files into the <b>juDock_input</b> folder located in your home directory before starting.
+        </div>
+        
+        <label for="modelSelect" style="font-weight:bold; display:block; margin-bottom: 8px;">Select Protein Target:</label>
+        <select id="modelSelect" style="padding:10px; width: 100%; max-width: 400px; border: 1px solid #ccc; border-radius: 4px;"></select>
+        
+        <br><br>
+        <button id="btnStart" onclick="startPipeline()">Start Analysis</button>
+
+        <!-- THE CLEAN PROGRESS BOX -->
+        <div id="statusBox">
+            <div class="status-header">
+                <span id="lblLigand">Initializing Pipeline...</span>
+                <span id="lblPercent">0%</span>
+            </div>
+            <div class="progress-bar-container">
+                <div id="progressBar" class="progress-bar-fill"></div>
+            </div>
+            <div class="status-footer">
+                <span id="lblStep">Preparing environment...</span>
+                <a id="logLink" class="log-link" href="#" target="_blank" style="display:none;">View Live Log</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- RESULTS TAB -->
+    <div id="tab-results" class="content">
+        <button onclick="loadResultsList()">Refresh List</button>
+        <div class="results-container" style="margin-top:15px;">
+            <div class="sidebar" id="resultsList"></div>
+            <div class="result-view" id="resultContent"><p style="color:#888;">Select a run from the left to view predictions.</p></div>
+        </div>
+    </div>
+</div>
+
+<div class="app-footer">
+    <i>Developed by</i><br>
+    <b><a href="https://github.com/suryasmilez21" target="_blank">Surya Sekaran</a></b><br>
+    <b>Dr. Benedict Christopher Paul</b><br>
+    <a href="http://www.drpaul.cc" target="_blank">www.drpaul.cc</a>
+</div>
+
+<script>
+    let pollInterval = null;
+    let isPipelineRunning = false;
+
+    window.onload = async function() {
+        const modelSelect = document.getElementById('modelSelect');
+        try {
+            const response = await fetch('/list-models');
+            const models = await response.json();
+            modelSelect.innerHTML = models.length > 0 ? models.map(m => `<option value="${m}">${m}</option>`).join('') : '<option disabled>No models found</option>';
+        } catch (e) {
+            modelSelect.innerHTML = '<option disabled>Error loading models</option>';
+        }
+        switchTab('run');
+        startPolling(); 
+    };
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+        if (tabId === 'run') {
+            document.querySelector('.tab:nth-child(1)').classList.add('active');
+            document.getElementById('tab-run').classList.add('active');
+        } else {
+            document.querySelector('.tab:nth-child(2)').classList.add('active');
+            document.getElementById('tab-results').classList.add('active');
+            loadResultsList();
+        }
+    }
+    
+    async function startPipeline() {
+        document.getElementById('btnStart').disabled = true;
+        document.getElementById('statusBox').style.display = 'block';
+        
+        document.getElementById('lblLigand').innerText = "Connecting to Server...";
+        document.getElementById('lblStep').innerText = "Please wait...";
+        document.getElementById('lblPercent').innerText = "0%";
+        document.getElementById('progressBar').style.width = "0%";
+        document.getElementById('logLink').style.display = 'none';
+
+        try {
+            const response = await fetch('/start-pipeline', { 
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model: document.getElementById('modelSelect').value })
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                isPipelineRunning = true;
+                if (pollInterval) clearInterval(pollInterval);
+                pollInterval = setInterval(fetchStatus, 400); // Poll very fast (400ms) for smooth bar
+            } else {
+                document.getElementById('lblLigand').innerText = "Error Starting Pipeline";
+                document.getElementById('lblStep').innerText = data.message;
+                document.getElementById('lblStep').style.color = "red";
+                document.getElementById('btnStart').disabled = false;
+            }
+        } catch (e) {
+            document.getElementById('lblStep').innerText = "Network Error: Could not reach server.";
+            document.getElementById('btnStart').disabled = false;
+        }
+    }
+
+    async function fetchStatus() {
+        try {
+            const response = await fetch('/get-status');
+            const state = await response.json();
+
+            if (state.is_running) {
+                isPipelineRunning = true;
+                document.getElementById('btnStart').disabled = true;
+                document.getElementById('statusBox').style.display = 'block';
+                
+                const pct = state.overall_progress;
+                let cleanLigandName = state.current_ligand.split(" ")[0];
+                
+                document.getElementById('lblLigand').innerText = `Processing: ${state.current_ligand} (${state.ligand_count})`;
+                document.getElementById('lblStep').innerText = `Current Step: ${state.current_step}`;
+                document.getElementById('lblPercent').innerText = `${pct}%`;
+                document.getElementById('progressBar').style.width = `${pct}%`;
+                
+                if (cleanLigandName && cleanLigandName !== "Initializing" && cleanLigandName !== "None") {
+                    document.getElementById('logLink').href = `/logs/${cleanLigandName}.log`;
+                    document.getElementById('logLink').style.display = 'inline';
+                } else {
+                    document.getElementById('logLink').style.display = 'none';
+                }
+
+            } else { 
+                if (isPipelineRunning) {
+                    isPipelineRunning = false;
+                    clearInterval(pollInterval);
+                    pollInterval = null;
+                    
+                    // Show 100% full before jumping
+                    document.getElementById('lblLigand').innerText = "Pipeline Finished Successfully!";
+                    document.getElementById('lblStep').innerText = "Results are ready to view.";
+                    document.getElementById('lblPercent').innerText = "100%";
+                    document.getElementById('progressBar').style.width = "100%";
+                    document.getElementById('btnStart').disabled = false;
+                    document.getElementById('logLink').style.display = 'none';
+                    
+                    setTimeout(() => switchTab('results'), 1500); // Jump to results tab
+                } else {
+                    if(pollInterval) clearInterval(pollInterval);
+                    pollInterval = null;
+                }
+            }
+        } catch (e) {
+            // Ignore network drops
+        }
+    }
+
+    // --- Results Viewer ---
+    async function loadResultsList() {
+        const listDiv = document.getElementById('resultsList');
+        listDiv.innerHTML = "Loading...";
+        try {
+            const response = await fetch('/list-results');
+            const folders = await response.json();
+            if (folders.length === 0) { listDiv.innerHTML = '<div style="padding:15px;color:#999">No results found.</div>'; return; }
+            listDiv.innerHTML = folders.map(f => `<div class="sidebar-item" onclick="loadDetail('${f}', this)">${f}</div>`).join('');
+        } catch (e) { listDiv.innerHTML = '<div style="padding:15px;color:red">Error loading results.</div>'; }
+    }
+    
+    // async function loadDetail(folder, element) {
+    //     document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('selected'));
+    //     element.classList.add('selected');
+    //     const contentDiv = document.getElementById('resultContent');
+    //     contentDiv.innerHTML = "Loading data...";
+    //     try {
+    //         const response = await fetch(`/get-result-data/${folder}`);
+    //         const result = await response.json();
+    //         if (!result.success) { contentDiv.innerHTML = `<p style="color:red">${result.message}</p>`; return; }
+            
+    //         let tableHTML = `<h3>Run: ${folder}</h3><table><thead><tr>`;
+    //         const headers = Object.keys(result.data[0]);
+    //         for(const header of headers) { tableHTML += `<th>${header}</th>`; }
+    //         tableHTML += '</tr></thead><tbody>';
+
+    //         for(const row of result.data) {
+    //             tableHTML += '<tr>';
+    //             for(const header of headers) { 
+    //                 let cellVal = row[header];
+    //                 if (header === "Activity") {
+    //                     if (cellVal === "Potential") cellVal = `<b style="color:#2e7d32">${cellVal}</b>`;
+    //                     else if (cellVal === "Not Active") cellVal = `<b style="color:#c62828">${cellVal}</b>`;
+    //                 }
+    //                 tableHTML += `<td>${cellVal}</td>`; 
+    //             }
+    //             tableHTML += '</tr>';
+    //         }
+    //         tableHTML += '</tbody></table>';
+    //         contentDiv.innerHTML = tableHTML;
+    //     } catch(e) {
+    //         contentDiv.innerHTML = '<p style="color:red">Error parsing data.</p>';
+    //     }
+    // }
+
+    async function loadDetail(folder, element) {
+        document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('selected'));
+        element.classList.add('selected');
+        const contentDiv = document.getElementById('resultContent');
+        contentDiv.innerHTML = "Loading data...";
+        try {
+            const response = await fetch(`/get-result-data/${folder}`);
+            const result = await response.json();
+            if (!result.success) { contentDiv.innerHTML = `<p style="color:red">${result.message}</p>`; return; }
+            
+            // --- TWEAK 1: Define exact column order ---
+            const headers = ["Ligand_ID", "Predicted_Binding_Affinity", "Predicted_Num_H_Bonds", "dockscore", "Activity"];
+            
+            let tableHTML = `<h3>Run: ${folder}</h3><table><thead><tr>`;
+            // Clean up header names (replace underscores with spaces)
+            for(const header of headers) { tableHTML += `<th>${header.replace(/_/g, ' ')}</th>`; }
+            tableHTML += '</tr></thead><tbody>';
+
+            for(const row of result.data) {
+                tableHTML += '<tr>';
+                for(const header of headers) { 
+                    let cellVal = row[header];
+                    
+                    // --- TWEAK 2: Add color for Putative ---
+                    if (header === "Activity") {
+                        if (cellVal === "Potential") cellVal = `<b style="color:#2e7d32">${cellVal}</b>`;
+                        else if (cellVal === "Putative") cellVal = `<b style="color:#e65100">${cellVal}</b>`; // Amber/Orange
+                        else if (cellVal === "Not Active") cellVal = `<b style="color:#c62828">${cellVal}</b>`;
+                    }
+                    
+                    // Ensure undefined values just show blank
+                    tableHTML += `<td>${cellVal !== undefined ? cellVal : ''}</td>`; 
+                }
+                tableHTML += '</tr>';
+            }
+            tableHTML += '</tbody></table>';
+            contentDiv.innerHTML = tableHTML;
+        } catch(e) {
+            contentDiv.innerHTML = '<p style="color:red">Error parsing data.</p>';
+        }
+    }
+</script>
+</body>
+</html>

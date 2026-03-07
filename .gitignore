@@ -1,0 +1,29 @@
+# --- User Data & Results ---
+# Ignore the input/output folders used during development
+/input/
+/output/
+/juDock_input/
+/juDock_output/
+
+# Ignore the results archive (where reports are saved)
+/results_archive/
+/juDock_results/
+
+# Ignore logs but keep the directory structure
+/public/logs/*
+!/public/logs/.gitkeep
+
+# --- Distribution Files ---
+# Ignore the large Docker image and the unzipped packaging folder
+*.tar
+*.tar.gz
+/juDock-v1.0-linux/
+
+# --- IDE/Editor Files ---
+# Ignore your VS Code workspace settings
+*.code-workspace
+.vscode/
+
+# --- Julia System Files ---
+/.julia/
+Manifest.toml
