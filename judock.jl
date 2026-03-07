@@ -77,7 +77,7 @@ route("/start-pipeline", method = "POST") do
                         sleep(0.05) # Breath for UI updates
                     end
                     
-                    result_dict = process_single_ligand(full_path, model_name, log_io, update_func, nothing, ligand_id)
+                    result_dict = process_single_ligand(full_path, model_name, log_io, update_func, ligand_id)
                     push!(final_results, result_dict, cols=:union)
                 catch e
                     println(log_io, "!!! PIPELINE FAILED for $ligand_id: $e")

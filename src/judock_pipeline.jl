@@ -31,7 +31,7 @@ function assign_label(score::Float64)
     if score >= 15.0; return "Potential"; elseif score >= 12.0; return "Putative"; else; return "Not Active"; end
 end
 
-function process_single_ligand(ligand_sdf_path::String, model_name::String, log_io::IO, update_func::Function)
+function process_single_ligand(ligand_sdf_path::String, model_name::String, log_io::IO, update_func, ligand_id::String)
     ligand_id = replace(basename(ligand_sdf_path), ".sdf" => "")
     println(log_io, "--- Starting juDock Pipeline for $ligand_id ---")
     
