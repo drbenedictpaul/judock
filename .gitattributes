@@ -1,0 +1,7 @@
+# Ignore web assets in language stats
+*.html linguist-detectable=false
+*.css linguist-detectable=false
+*.js linguist-detectable=false
+
+# Ensure Julia is detected
+*.jl linguist-detectable=true
