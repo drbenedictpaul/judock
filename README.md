@@ -86,3 +86,4 @@ Once the server is running, open your web browser and navigate to **http://local
 #### 5. Stopping the Application
 
 To shut down the server, return to the terminal where it is running and press **Ctrl+C**.
+You may then close the browser window.
