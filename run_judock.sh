@@ -44,6 +44,6 @@ echo ""
 # Run the Docker container
 docker run -it --rm \
   -p 8000:8000 \
-  -v "$INPUT_DIR":/root/juDock_input \
-  -v "$RESULTS_DIR":/root/juDock_results \
+  -v "$INPUT_DIR":/root/juDock_input:z \
+  -v "$RESULTS_DIR":/root/juDock_results:z \
   judock:v1
